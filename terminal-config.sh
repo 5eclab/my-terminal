@@ -2,48 +2,66 @@
 
 # Verifique se o script está sendo executado como root para instalar pacotes
 if [[ $EUID -ne 0 ]]; then
-   echo "Este script precisa ser executado como root para instalar pacotes." 
-   exit 1
+   echo "Aviso: Você não é root. Os pacotes não serão instalados. Continuando apenas com a configuração do terminal."
+   INSTALL_PACKAGES=false
+else
+   INSTALL_PACKAGES=true
 fi
 
-# Instale o Zsh
-echo "Instalando o Zsh..."
-sudo apt update
-sudo apt install -y zsh curl wget git
+# Instale pacotes se for root
+if [[ $INSTALL_PACKAGES == true ]]; then
+   echo "Instalando pacotes necessários..."
+   sudo apt update
+   sudo apt install -y zsh curl wget git
+fi
 
 # Instale o Oh My Zsh
-echo "Instalando o Oh My Zsh..."
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+   echo "Instalando o Oh My Zsh..."
+   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+else
+   echo "Oh My Zsh já está instalado."
+fi
 
 # Configure o Zsh como shell padrão
-echo "Configurando o Zsh como shell padrão..."
-chsh -s $(which zsh)
+if [[ "$(echo $SHELL)" != "$(which zsh)" ]]; then
+   echo "Configurando o Zsh como shell padrão..."
+   chsh -s $(which zsh)
+else
+   echo "Zsh já é o shell padrão."
+fi
 
 # Baixe o tema personalizado
 echo "Baixando o tema af-magic-custom.zsh-theme..."
 wget -O ~/.oh-my-zsh/themes/af-magic-custom.zsh-theme https://raw.githubusercontent.com/5eclab/my-terminal/main/af-magic-custom.zsh-theme
 
-# Instale plugins para o Zsh
+# Configure plugins do Zsh
 echo "Instalando plugins do Zsh..."
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 
 # Autosuggestions
-git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions
+if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
+   git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions
+else
+   echo "Plugin zsh-autosuggestions já instalado."
+fi
 
 # Syntax Highlighting
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting
-
-# Fast Syntax Highlighting (redundante com o zsh-syntax-highlighting, escolha um)
-git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git $ZSH_CUSTOM/plugins/fast-syntax-highlighting
+if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
+   git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting
+else
+   echo "Plugin zsh-syntax-highlighting já instalado."
+fi
 
 # Autocomplete
-git clone --depth 1 https://github.com/marlonrichert/zsh-autocomplete.git $ZSH_CUSTOM/plugins/zsh-autocomplete
+if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-autocomplete" ]]; then
+   git clone --depth 1 https://github.com/marlonrichert/zsh-autocomplete.git $ZSH_CUSTOM/plugins/zsh-autocomplete
+else
+   echo "Plugin zsh-autocomplete já instalado."
+fi
 
 # Baixe o arquivo .zshrc personalizado
 echo "Baixando o arquivo .zshrc personalizado..."
 wget -O ~/.zshrc https://raw.githubusercontent.com/5eclab/my-terminal/main/.zshrc
 
-# Atualize as permissões e recarregue o Zsh
-echo "Finalizando configuração..."
-sudo chmod -R 755 ~/.oh-my-zsh
 exec zsh
